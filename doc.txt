@@ -1,0 +1,6 @@
+asdasd
+asdasdadsa
+
+if(p > 0){
+	dio = boia
+}
