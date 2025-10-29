@@ -1,5 +1,5 @@
 # BSProject2526
-💻 Repository Workflow Guide
+## 💻 Repository Workflow Guide
 
 This guide outlines the standard Git workflow for collaborating on this repository, focusing on using a Personal Access Token (PAT) for authentication (required by GitHub over HTTPS) and the essential three-step cycle: Stage, Commit, Push.
 
