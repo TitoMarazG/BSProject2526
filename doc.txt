@@ -4,3 +4,6 @@ asdasdadsa
 if(p > 0){
 	dio = boia
 }
+
+sadasdadsadasdsad
+prova prova
