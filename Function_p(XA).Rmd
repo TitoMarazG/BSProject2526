@@ -1,0 +1,73 @@
+---
+title: "Function_p(XA)"
+author: "Leo"
+date: "2025-11-13"
+output: html_document
+---
+
+In this file I'm trying to build a script for the computation of p(XA)
+
+The input are:
+
+- a: the value of the degrees of freedom
+- U: the scale matrix
+- X: the normal multivariate dataset
+- A: a subset of the originale nodes/covariates set {1, ..., q}
+
+The output is:
+
+- p(XA): the marginal distribution of the subset of covariates contained in A
+
+Here I put the script provided from the Professor Castelletti and Professor Ferrini to create a simulated normal multivariate dataset of n=200, q=5 referred to a DAG D0:
+
+```{r}
+library(BCDAG)
+q = 5 # number of nodes(/variables/covariates)
+D0 = matrix(c(rep(0,q),
+              rep(0, q),
+              rep(c(1,1,0,0,0),3)), byrow = T, nrow = q, ncol = q) # adjacency matrix of a DAG
+## Note: the true DAG is D1, i.e. the one having an edge u -> v
+L = D0*matrix(runif(q*q, 1, 3), q, q)*
+  sample(c(-1, 1), size = q*q, replace = TRUE)
+diag(L) = 1
+D = diag(rep(1, q)) # L and D are the parameters of the modified Cholesky decomposition of Sigma
+Sigma = solve(t(L))%*%D%*%solve(L) # Sigma = (L')^-1 * D * (L)^-1
+n = 200 # number of observations
+X = mvtnorm::rmvnorm(n, rep(0, q), Sigma) # simulated data
+print(D0)
+head(X)
+```
+
+```{r}
+```
+
+
+
+
+
+
+
+Let's define the formula that gives back the distribution of p(XA)
+```{r}
+p_XA <- function(X, a, U, A){
+  n = nrow(X)
+  q = ncol(X)
+  card_A = length(A)
+  card_nonA = q - card_A
+  XA <- X[, A]
+  
+  
+  p_XA = (2*pi)^(-n*card_A/2) * norm_cost()
+  return 
+}
+```
+
+
+
+
+
+
+
+
+
+
