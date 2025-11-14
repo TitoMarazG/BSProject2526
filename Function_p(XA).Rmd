@@ -5,20 +5,29 @@ date: "2025-11-13"
 output: html_document
 ---
 
+# Computation of p(XA)
+
+First: install the necessary package(s)
+```{r}
+#install.packages("MCMCpack")
+library(MCMCpack)
+```
+
+
 In this file I'm trying to build a script for the computation of p(XA)
 
 The input are:
 
-- a: the value of the degrees of freedom
-- U: the scale matrix
-- X: the normal multivariate dataset
-- A: a subset of the originale nodes/covariates set {1, ..., q}
+-   a: the value of the degrees of freedom,
+-   U: the scale matrix,
+-   X: the normal multivariate dataset,
+-   A: a subset of the originale nodes/covariates set {1, ..., q}.
 
 The output is:
 
-- p(XA): the marginal distribution of the subset of covariates contained in A
+-   p(XA): the marginal distribution of the subset of covariates contained in A.
 
-Here I put the script provided from the Professor Castelletti and Professor Ferrini to create a simulated normal multivariate dataset of n=200, q=5 referred to a DAG D0:
+Here I put the script provided from the Professor Castelletti and Professor Ferrini to create a **simulated normal multivariate dataset** of n=200, q=5 referred to a DAG D0:
 
 ```{r}
 library(BCDAG)
@@ -38,16 +47,79 @@ print(D0)
 head(X)
 ```
 
+## Prior of Ω
+
+Let's define the prior parameters a and U and then the prior of Ω
+
 ```{r}
+a <- q # minimum df (a > q-1)
+U <- diag(1e-06, q) # minimum scale matrix: almost all zero
+Ω_prior <- rWishart(100, a, U) # 100 matrices 5 x 5
+```
+
+## Posterior of Ω
+
+We know that the Ω_posterior has
+
+-   df = a + n
+-   scale matrix = U + S, where S = X' \* X
+
+```{r}
+S = t(X)%*%X
+Ω_posterior <- rWishart(100, a+n, U+S) # 100 matrices 5 x 5
+```
+
+We know that the Ω\|X likelihood estimator is the ∑\^-1 of X
+
+```{r}
+Ω_posterior_likelihood = solve(cov(X))
+Ω_posterior_likelihood
+```
+## p(XA)
+
+### Multivariate gamma
+
+```{r}
+#' Calcola la Gamma Multivariata (Metodo Diretto, INSTABILE)
+#'
+#' @param a L'argomento della funzione
+#' @param p La dimensione
+#'
+mvgamma_direct <- function(a, p) {
+  
+  # Termine 1: pi^(p*(p-1)/4)
+  term1 <- pi^((p * (p - 1)) / 4)
+  
+  # Termine 2: La produttoria
+  j <- 1:p
+  
+  # Calcoliamo i singoli valori gamma
+  # es: [gamma(a + 0/2), gamma(a - 1/2), gamma(a - 2/2), ...]
+  gamma_terms <- gamma(a + (1 - j) / 2)
+  
+  # Moltiplichiamo tutti i termini insieme
+  # ATTENZIONE: Questo è il punto in cui fallisce!
+  term2 <- prod(gamma_terms)
+  
+  # Risultato finale
+  return(term1 * term2)
+}
 ```
 
 
+### c(a, U)
 
-
-
-
+```{r}
+norm_cost <- function(a, U){
+  q = length(U)
+  num = 
+  den = 2^(a*q/2) * mgamma()
+  return num/den
+}
+```
 
 Let's define the formula that gives back the distribution of p(XA)
+
 ```{r}
 p_XA <- function(X, a, U, A){
   n = nrow(X)
@@ -61,13 +133,3 @@ p_XA <- function(X, a, U, A){
   return 
 }
 ```
-
-
-
-
-
-
-
-
-
-
