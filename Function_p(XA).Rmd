@@ -96,7 +96,7 @@ mvgamma_direct <- function(a, p) {
   # Calcoliamo i singoli valori gamma
   # es: [gamma(a + 0/2), gamma(a - 1/2), gamma(a - 2/2), ...]
   gamma_terms <- gamma(a + (1 - j) / 2)
-  
+
   # Moltiplichiamo tutti i termini insieme
   # ATTENZIONE: Questo è il punto in cui fallisce!
   term2 <- prod(gamma_terms)
@@ -111,9 +111,11 @@ mvgamma_direct <- function(a, p) {
 
 ```{r}
 norm_cost <- function(a, U){
-  q = length(U)
-  num = 
-  den = 2^(a*q/2) * mgamma()
+  q = ncol(U)
+  detU <- determinant(U, logarithm = FALSE)
+  absdetU <- as.numeric(detU$modulus) # |U|
+  num <- absdetU^(a / 2)               # |U|^(a/2)
+  den <- 2^((a * q) / 2) * mvgamma_direct(a / 2, q) # 2^(a*q/2) * Gamma_q(a/2)
   return num/den
 }
 ```
@@ -124,12 +126,20 @@ Let's define the formula that gives back the distribution of p(XA)
 p_XA <- function(X, a, U, A){
   n = nrow(X)
   q = ncol(X)
+  A <- sort(as.integer(A)) # per evitare errori in chiamate come X[, A] o S[A, A]
   card_A = length(A)
   card_nonA = q - card_A
-  XA <- X[, A]
+  S = t(X) %*% X # S = X'X
+  
+  S_AA = S[A, A, drop = FALSE]
+  U_AA = U[A, A, drop = FALSE]
+  
+  c_prior <- norm_cost(a - card_nonA, U_AA)
+  c_post  <- norm_cost(a + n - card_nonA, U_AA + S_AA)
   
   
-  p_XA = (2*pi)^(-n*card_A/2) * norm_cost()
-  return 
+  factor = (2 * pi)^(- (n * card_A) / 2)
+  p_val = factor * (c_prior / c_post)
+  return(p_val) 
 }
 ```
