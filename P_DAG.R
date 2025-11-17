@@ -4,18 +4,20 @@ P_DAG <- function(X, DAG, a, U) {
   source(Function_p(XA))
   
   j=nodes(DAG)
+  prod_pa = 1
+  prod_fa = 1
   
-  i <- 1:length(j)
-  pa <- parents(DAG,j[i])
-  fa <- c(pa,j[i])  
+ for(i in 1:length(j)){
+   
+   pa <- parents(DAG,j[i])
+   fa <- c(pa,j[i])  
+   
+   prod_pa <-  prod_pa * (P_XA(X,a,U,pa))
+   prod_fa <- prod_fa * (P_XA(X,a,U,fa))
+   
+ }
   
-  u <- 1:length(pa)
-  v <- 1:length(fa)
-  
-  prod_pa <- prod(P_XA(X,a,U,pa[u]))
-  prod_fa <- prod(P_XA(X,a,U,fa[v]))
-  
-  P_DAG = prod_fa/prod_p12a
+  P_DAG = prod_fa/prod_pa
   return(P_DAG)
                   
 }
