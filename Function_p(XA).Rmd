@@ -119,7 +119,7 @@ norm_cost <- function(a, U){
   return num/den
 }
 ```
-
+ 
 Let's define the formula that gives back the distribution of p(XA)
 
 ```{r}
