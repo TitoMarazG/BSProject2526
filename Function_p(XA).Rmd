@@ -31,6 +31,7 @@ Here I put the script provided from the Professor Castelletti and Professor Ferr
 
 ```{r simulate normal multivariate dataset}
 library(BCDAG)
+set.seed(100)
 q = 5 # number of nodes(/variables/covariates)
 D0 = matrix(c(rep(0,q),
               rep(0, q),
@@ -78,118 +79,137 @@ We know that the Ω|X likelihood estimator is the ∑^-1 of X
 
 ## p(XA) metodo 1
 
-Qui creo a parte una funzione che calcola la multivariate gamma function, la costante di normalizzazione c(a,U) e finalmente poi la p(XA)
+Qui creo a parte una funzione che calcola la multivariate gamma function, la costante di normalizzazione c(a,U) e finalmente poi la p(XA). Siccome i numeri sono giganti, calcolo tutto in log e poi calcolo l'esponenziale.
+Nota per me stesso: in futuro sarebbe carino dare in pasto solo la prior anziché a ed U separati.
 
-### Multivariate gamma
-
-```{r multivariate gamma function}
-
-mvgamma_direct <- function(a, p) {
-  term1 <- ((p * (p - 1)) / 4) *log(pi)
-  j <- 1:p
-  gamma_terms <- lgamma(a + (1 - j) / 2)
-  term2 <- sum(gamma_terms)
-  cat("Questo è term2 durante mvgamma: ", term2, "\n")
-  cat("Questo è term1+term2 durante mvgamma: ", term1+term2, "\n")
-  cat("Questo è exp(term1+term2) durante mvgamma: ", exp((term1 + term2)), "\n")
-
-  return(exp((term1 + term2)))
-}
-```
-
-### c(a, U)
-
-```{r norm_cost}
-norm_cost <- function(a, U){
-  q = ncol(U)
-  detU <- determinant(U, logarithm = FALSE)
-  absdetU <- as.numeric(detU$modulus) # |U|
-  num <- absdetU^(a / 2)               # |U|^(a/2)
-  den <- 2^((a * q) / 2) * mvgamma_direct(a/2, q) # 2^(a*q/2) * Gamma_q(a/2)
-  return (num/den)
-}
-```
-
-Let's define the formula that gives back the distribution of p(XA)
-
-```{r p_XA}
+###p(XA)
+```{r p(XA)}
 p_XA <- function(X, a, U, A){
-  n = nrow(X)
-  q = ncol(X)
-  A <- sort(as.integer(A)) # per evitare errori in chiamate come X[, A] o S[A, A]
-  card_A = length(A)
-  card_nonA = q - card_A
-  S = t(X) %*% X # S = X'X
-  
-  S_AA = S[A, A, drop = FALSE]
-  U_AA = U[A, A, drop = FALSE]
-  
-  c_prior <- norm_cost(a - card_nonA, U_AA)
-  c_post  <- norm_cost(a + n - card_nonA, U_AA + S_AA)
-  
-  
-  factor = (2 * pi)^(- (n * card_A) / 2)
-  p_val = factor * (c_prior / c_post)
-  return(p_val) 
+  return(exp(log.p_XA(X, a, U, A)))
 }
 ```
 
+###log(p(XA))
 ```{r}
-X
+log.p_XA <- function(X, a, U, A){
+  S <- t(X)%*%X
+  nonA <- setdiff(1:ncol(X), A)
+  A.c <- length(A)  # cardinalità di A
+  nonA.c <- length(nonA)  # cardinalità di nonA
+  UAA <- U[A, A]
+  SAA <- S[A, A]
+  
+  return(log(2*pi) * (-n*A.c/2)
+         + log.norm_cost(a-nonA.c, UAA)
+         - log.norm_cost(a+n-nonA.c, UAA+SAA))
+}
+```
+
+###log(c(a,U))
+```{r}
+log.norm_cost <- function(a, U){
+  q = ncol(U)
+  return(a/2*log(det(U))
+         - a*q/2*log(2)
+         - log.multivariate_gamma(q, a/2))
+}
+```
+
+###log(Gamma_p(a))
+```{r}
+log.multivariate_gamma <- function(p, x){
+  val = 0
+  for(j in 1:p)
+    val = val + lgamma(x+(1-j)/2)
+  return(p*(p-1)/4*log(pi)
+         + val)
+}
+```
+
+###Proviamo a calcolare p(XA)
+```{r}
+head(X)
+a <- n
 a
+U <- diag(1, q)
 U
-A <- 1:3
+A <- c(1,3,5)
+A
+```
+```{r}
+log.p_XA(X, a, U, A)
+```
+```{r}
+p_XA(X, a, U, A)
+```
+Plot di log.p_XA in relazione ad a:
+```{r}
+a_vals <- 1:1000
+y_di_a <- sapply(a_vals, function(val) 
+                           log.p_XA(X, val, U, A)
+                 )
+plot(a_vals, y_di_a, 
+     type = "l",        # "l" per una linea continua (più bello per le funzioni)
+     ylim = c(-9000, 0), 
+     xlab = "Gradi di libertà (a)", 
+     ylab = "Log p(XA)",
+     main = "Andamento di p(XA) al variare di a")
+```
+
+Massimo valore di log(p(XA))
+```{r}
+log.p_XA(X, q, U, A)
+```
+
+Massimo valore di p(XA) (exp(log(p(XA))))
+```{r}
+p_XA(X, q, U, A)
+```
+
+###Find a & U
+
+Utilizzo la stima della media di Ω:
+E[Ω] ≈ a*U
+Ω.cappuccio = ∑^-1 (stima dai dati)
+=> U = E[Ω]/a = ∑^(-1)/a
+```{r}
+a = 100   # unica cosa che decido io
+Sigma = cov(X)
+Ω.cappuccio = solve(Sigma)
+U = Ω.cappuccio/a
+log.p_XA(X, a, U, A)
+```
+```{r}
+a_vals <- q:100
+lista_U <- lapply(a_vals, function(a) {
+                            U <- (Ω.cappuccio / a)
+                            return(U)}
+                 )
+log_probs <- rep(0, times = 100 - q)
+for (i in 1:(100-q+1)) {
+  log_probs[i] <- log.p_XA(X, a_vals[i], lista_U[[i]], A)
+}
+```
+```{r}
+plot(a_vals, log_probs, 
+     type = "l",            # 'l' sta per linea
+     col = "blue",          # Colore della linea
+     lwd = 2,               # Spessore della linea
+     main = expression(paste("Log Evidence vs ", a, " (con ", U == hat(Omega)/a, ")")),
+     xlab = "Valore di a (Gradi di libertà)",
+     ylab = "Log p(XA)")
+grid()
+max_idx <- which.max(log_probs)
+best_a <- a_vals[max_idx]
+abline(v = best_a, col = "red", lty = 2)
+text(best_a, min(log_probs), paste("Max a =", best_a), pos = 4, col = "red")
+```
+```{r}
+a = 5
+U = Ω.cappuccio/a
+log.p_XA(X, a, U, A)
+```
+```{r}
 p_XA(X, a, U, A)
 ```
 
-## p(XA) metodo 2
-
-Siccome trovo brutto e forse troppo costoso calcolare tutte quelle funzioni separatamente, ho provato a semplificare qualche termine ed è venuta fuori una formula più compatta. Potrebbe non essere efficace neanche queste perché c'è il pericolo che uno dei fattori esca troppo piccolo e R potrebbe approssimarlo a 0.
-Di seguito lo script per il calcolo di p(X).
-(ATTENZIONE, QUESTA SEMPLIFICAZIONE L'HO DIMOSTRATA SOLO PER n PARI, DEVO ANCORA VEDERE SE VALE PER n DISPARI)
-
-```{r p(X)}
-p_X <- function(a, U, n, S){
-  q = ncol(U)
-  val = pi^(-n*q/2) * ((det(U))^(a/2)) / (det(U+S)^((a+n)/2))
-  n <- 5 # Definisci la tua variabile n
-  cat("Questo è det(U)^(a/2) prima di cominciare a calcolare la produttoria: ", (det(U))^(a/2), "\n")
-  cat("Questo è det(U+S)^((a+n)/2) prima di cominciare a calcolare la produttoria: ", (det(U+S)^((a+n)/2)), "\n")
-  cat("Questo è p(X) prima di cominciare a calcolare la produttoria: ", val, "\n")
-  for (jj in 1:q) {
-    for (ii in 1:(n/2)) {
-      val <- val * (a/2 + (1-jj)/2 + n/2 - ii)
-    }
-  }
-  return(val)
-}
-```
-
-```{r}
-rapporto_norm_cost <- function(a, U, n, S){
-  q = ncol(U)
-  detU <- determinant(U, logarithm = FALSE)
-  absdetU <- as.numeric(detU$modulus) # |U|
-  B = U+S
-  detB <- determinant(B, logarithm = FALSE)
-  absdetB <- as.numeric(detB$modulus) # |B|
-  num1 <- absdetU^(a / 2)               # |U|^(a/2)
-  num2 <- absdetB^((a+n) / 2)               # |B|^((a+n)/2)
-  den1 <- mvgamma_direct(a / 2, q)
-  den2 <- mvgamma_direct((a+n) / 2, q)
-  c1 <- num1/den1
-  c2 <- num2/den2
-  return(c1/c2/2^((n * q) / 2))
-}
-```
-
-
-```{r}
-a
-U
-n
-S
-rapporto_norm_cost(a,U,n,S)
-p_X(a, U, n, S)
-```
-Infatti fa cagare che viene 0
