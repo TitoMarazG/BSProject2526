@@ -1,6 +1,7 @@
 P_DAG_puntuale <- function(X, DAG, a, U, nodo_da_testare) {
   
   #install.packages("bnlearn")
+  library("bnlearn")
   source(Function_p(XA))
   
   pa <- parents(DAG,nodo_da_testare)
