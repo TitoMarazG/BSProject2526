@@ -1,15 +1,24 @@
-P_DAGM <- function(X, DAGM, a, U) { 
+P_DAGM <- function(S, DAGM, a, U) { 
   #VERSIONE DI P_DAG CON MATRICE DI ADIACENZA: DAGM: 
   source(Function_p(XA))
   
   j=1:ncol(DAGM)
-  prod_pa = 1
-  prod_fa = 1
+  
+  sum_pa = 0
+  sum_fa = 0
   
   for(i in 1:length(j)){
     
     pa <- which(DAGM[, i] == 1)
     fa <- c(pa,i)  
+    
+    if(any(pa != 0)){
+      
+      sum_pa <- sum_pa + (P_XA(S,a,U,pa))
+      
+    }
+    
+    sum_fa <- sum_fa + (P_XA(S,a,U,fa))
     
     #SERVE HANDLER PER IL CASO: pa= Vuoto
     #se pa=Vuoto la funzione parents restituisce un vettore char di lunghezza zero
@@ -26,12 +35,11 @@ P_DAGM <- function(X, DAGM, a, U) {
     # LA CORRSISPONDENZA LETTERE NUMERI DEVE RISPECCHIARSI NEL DATASET (A=1 = 1a col del dataset)
     
     
-    prod_pa <-  prod_pa * (P_XA(X,a,U,pa))
-    prod_fa <- prod_fa * (P_XA(X,a,U,fa))
     
   }
   
-  P_DAG = prod_fa/prod_pa
+  P_DAG = sum_fa - sum_pa
+  
   return(P_DAG)
   
 }
