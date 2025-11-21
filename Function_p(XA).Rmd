@@ -63,14 +63,14 @@ U <- diag(1, q) # minimum scale matrix: almost all zero
 We know that the Ω_posterior has
 
 -   df = a + n
--   scale matrix = U + S, where S = X' * X
+-   scale matrix = U + S, where S = X' \* X
 
 ```{r Ω_posterior}
 S = t(X)%*%X
 Ω_posterior <- rWishart(100, a+n, U+S) # 100 matrices 5 x 5
 ```
 
-We know that the Ω|X likelihood estimator is the ∑^-1 of X
+We know that the Ω\|X likelihood estimator is the ∑\^-1 of X
 
 ```{r Ω_posterior_likelihood}
 Ω_posterior_likelihood = solve(cov(X))
@@ -79,25 +79,25 @@ We know that the Ω|X likelihood estimator is the ∑^-1 of X
 
 ## p(XA) metodo 1
 
-Qui creo a parte una funzione che calcola la multivariate gamma function, la costante di normalizzazione c(a,U) e finalmente poi la p(XA). Siccome i numeri sono giganti, calcolo tutto in log e poi calcolo l'esponenziale.
-Nota per me stesso: in futuro sarebbe carino dare in pasto solo la prior anziché a ed U separati.
+Qui creo a parte una funzione che calcola la multivariate gamma function, la costante di normalizzazione c(a,U) e finalmente poi la p(XA). Siccome i numeri sono giganti, calcolo tutto in log e poi calcolo l'esponenziale. Nota per me stesso: in futuro sarebbe carino dare in pasto solo la prior anziché a ed U separati.
 
-###p(XA)
+### p(XA)
+
 ```{r p(XA)}
-p_XA <- function(X, a, U, A){
-  return(exp(log.p_XA(X, a, U, A)))
+p_XA <- function(S, n, a, U, A){
+  return(exp(log.p_XA(S, n, a, U, A)))
 }
 ```
 
-###log(p(XA))
+### log(p(XA))
+
 ```{r}
-log.p_XA <- function(X, a, U, A){
-  S <- t(X)%*%X
+log.p_XA <- function(S, n, a, U, A){
   nonA <- setdiff(1:ncol(X), A)
   A.c <- length(A)  # cardinalità di A
   nonA.c <- length(nonA)  # cardinalità di nonA
-  UAA <- U[A, A]
-  SAA <- S[A, A]
+  UAA <- U[A, A, drop = FALSE] #####
+  SAA <- S[A, A, drop = FALSE]
   
   return(log(2*pi) * (-n*A.c/2)
          + log.norm_cost(a-nonA.c, UAA)
@@ -105,7 +105,8 @@ log.p_XA <- function(X, a, U, A){
 }
 ```
 
-###log(c(a,U))
+### log(c(a,U))
+
 ```{r}
 log.norm_cost <- function(a, U){
   q = ncol(U)
@@ -115,7 +116,8 @@ log.norm_cost <- function(a, U){
 }
 ```
 
-###log(Gamma_p(a))
+### log(Gamma_p(a))
+
 ```{r}
 log.multivariate_gamma <- function(p, x){
   val = 0
@@ -126,9 +128,12 @@ log.multivariate_gamma <- function(p, x){
 }
 ```
 
-###Proviamo a calcolare p(XA)
+### Proviamo a calcolare p(XA)
+
 ```{r}
 head(X)
+S = t(X)%*%X
+S
 a <- n
 a
 U <- diag(1, q)
@@ -136,17 +141,21 @@ U
 A <- c(1,3,5)
 A
 ```
+
 ```{r}
-log.p_XA(X, a, U, A)
+log.p_XA(S, n, a, U, A)
 ```
+
 ```{r}
-p_XA(X, a, U, A)
+p_XA(S, n, a, U, A)
 ```
+
 Plot di log.p_XA in relazione ad a:
+
 ```{r}
 a_vals <- 1:1000
 y_di_a <- sapply(a_vals, function(val) 
-                           log.p_XA(X, val, U, A)
+                           log.p_XA(S, n, val, U, A)
                  )
 plot(a_vals, y_di_a, 
      type = "l",        # "l" per una linea continua (più bello per le funzioni)
@@ -156,29 +165,32 @@ plot(a_vals, y_di_a,
      main = "Andamento di p(XA) al variare di a")
 ```
 
-Massimo valore di log(p(XA))
+Massimo valore di **log(p(XA))**
+
 ```{r}
-log.p_XA(X, q, U, A)
+log.p_XA(S, n, q, U, A)
 ```
 
-Massimo valore di p(XA) (exp(log(p(XA))))
+Massimo valore di **p(XA)** (exp(log(p(XA))))
+
 ```{r}
-p_XA(X, q, U, A)
+p_XA(S, n, q, U, A)
 ```
 
-###Find a & U
+### Find a & U
 
-Utilizzo la stima della media di Ω:
-E[Ω] ≈ a*U
-Ω.cappuccio = ∑^-1 (stima dai dati)
-=> U = E[Ω]/a = ∑^(-1)/a
+Un metodo è quello di scegliere arbitrariamente a, U è quindi calcolata come l'inversa della sample covariance matrix scalata di un termine a.
+
+Utilizzo la stima della media di Ω: E[Ω] ≈ a\*U Ω.cappuccio = ∑\^-1 (stima dai dati) =\> U = E[Ω]/a = ∑\^(-1)/a
+
 ```{r}
 a = 100   # unica cosa che decido io
 Sigma = cov(X)
-Ω.cappuccio = solve(Sigma)
-U = Ω.cappuccio/a
-log.p_XA(X, a, U, A)
+Ω.cappuccio = solve(cov(X))
+U = solve(cov(X))/a   # Ω.cappuccio/a
+log.p_XA(S, n, a, U, A)
 ```
+
 ```{r}
 a_vals <- q:100
 lista_U <- lapply(a_vals, function(a) {
@@ -187,9 +199,10 @@ lista_U <- lapply(a_vals, function(a) {
                  )
 log_probs <- rep(0, times = 100 - q)
 for (i in 1:(100-q+1)) {
-  log_probs[i] <- log.p_XA(X, a_vals[i], lista_U[[i]], A)
+  log_probs[i] <- log.p_XA(S, n, a_vals[i], lista_U[[i]], A)
 }
 ```
+
 ```{r}
 plot(a_vals, log_probs, 
      type = "l",            # 'l' sta per linea
@@ -204,12 +217,15 @@ best_a <- a_vals[max_idx]
 abline(v = best_a, col = "red", lty = 2)
 text(best_a, min(log_probs), paste("Max a =", best_a), pos = 4, col = "red")
 ```
+
+Scelgo a minima, cioè q:
+
 ```{r}
 a = 5
 U = Ω.cappuccio/a
-log.p_XA(X, a, U, A)
-```
-```{r}
-p_XA(X, a, U, A)
+log.p_XA(S, n, a, U, A)
 ```
 
+```{r}
+p_XA(S, n, a, U, A)
+```
