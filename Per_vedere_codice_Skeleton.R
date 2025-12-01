@@ -1,0 +1,8 @@
+#install.packages("BiocManager")
+#BiocManager::install("graph")
+#BiocManager::install("RBGL")
+#install.packages("pcalg")
+library(graph)
+library(RBGL)
+library(pcalg)
+getAnywhere("skeleton")
