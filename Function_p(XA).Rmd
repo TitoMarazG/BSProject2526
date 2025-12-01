@@ -116,7 +116,7 @@ norm_cost <- function(a, U){
   absdetU <- as.numeric(detU$modulus) # |U|
   num <- absdetU^(a / 2)               # |U|^(a/2)
   den <- 2^((a * q) / 2) * mvgamma_direct(a / 2, q) # 2^(a*q/2) * Gamma_q(a/2)
-  return num/den
+  return (num/den)
 }
 ```
  
