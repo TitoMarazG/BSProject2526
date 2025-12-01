@@ -1,6 +1,6 @@
 P_DAGM <- function(S, DAGM, a, U) { 
   #VERSIONE DI P_DAG CON MATRICE DI ADIACENZA: DAGM: 
-  source(Function_p(XA))
+  source("P_(XA).R")
   
   j=1:ncol(DAGM)
   
