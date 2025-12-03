@@ -9,5 +9,5 @@ P_DAG_puntuale <- function(X, DAG, a, U, nodo_da_testare) {
   
   P_DAG = P_XA(X,a,U,fa)/P_XA(X,a,U,pa)
   return(P_DAG)
-  
+}
   

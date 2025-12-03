@@ -5,4 +5,10 @@
 library(graph)
 library(RBGL)
 library(pcalg)
-getAnywhere("skeleton")
+
+"pcalg" %in% loadedNamespaces()
+
+#### getAnywhere("skeleton")
+
+
+
