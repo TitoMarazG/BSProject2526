@@ -1,0 +1,46 @@
+---
+title: "BF01"
+author: "Leo"
+date: "2025-12-03"
+output: html_document
+---
+
+# Calcolo del Bayes Factor
+
+Formula pe calcolare il Bayes Factor dati due grafi D0 e D1 la cui unica differenza è la presenza o meno dell'arco u—\>v:
+
+$$
+BF_{01} = \frac{ \frac{p(X_{fa\_D0(v)})}{p(X_{pa\_D0(v)})} }{ \frac{p(X_{fa\_D1(v)})}{p(X_{pa\_D1(v)})} }
+$$
+
+Siccome i valori sono molto piccoli, lavoreremo coi logaritmi:
+
+$$
+log(BF_{01}) = [ \log(p(X_{fa\_D0(v)})) - \log(p(X_{pa\_D0(v)})) ] - [ \log(p(X_{fa\_D1(v)})) - \log(p(X_{pa\_D1(v)})) ]
+$$
+
+**Domanda per Arianna e Federico:** questo è il codice scritto da Arianna per calcolare il BF
+
+```{r BF}
+BF <- function(S, DAGM0, DAGM1, a, U, nodo_da_testare){
+  source("P_DAGM_puntuale.R")
+  return(P_DAGM_puntuale(S, DAGM0, a, U, nodo_da_testare)/P_DAGM_puntuale(S, DAGM1, a, U, nodo_da_testare))
+}
+```
+
+è possibile ricavare il nodo_da_testare all'interno della funzione logBF (o BF), così da richiedere meno input all'utente?
+
+**Riflessione per Arianna e Federico:** dato che abbiamo la formula per il logBF (o BF) (scritta sopra) che utilizza log(p(XA)), possiamo skippare l'utilizzo di P_DAGM_puntuale no?
+
+```{r log.BF}
+log.BF <- function(S, n, a, U, D0, D1){
+  nodo_da_testare <- funzione_che_trova_il_nodo(D0, D1) # vedere se è possibile
+  parents0 <- which(D0[, nodo_da_testare] == 1)
+  family0 <- c(parents0, Cai)
+  parents1 <- which(D1[, nodo_da_testare] == 1)
+  family1 <- c(parents1, i)
+  return([log.p_XA(S, n, a, U, family0) - log.pXA(S, n, a, U, parents0)] - [log.p_XA(S, n, a, U, family1) - log.pXA(S, n, a, U, parents1)])
+}
+```
+
+**Vanno messe dentro questo file tutte le altre funzioni che servono a calcolare log.p(XA)**

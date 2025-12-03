@@ -70,7 +70,7 @@ S = t(X)%*%X
 Ω_posterior <- rWishart(100, a+n, U+S) # 100 matrices 5 x 5
 ```
 
-We know that the Ω\|X likelihood estimator is the ∑\^-1 of X
+We know that the Ω|X likelihood estimator is the ∑^-1 of X
 
 ```{r Ω_posterior_likelihood}
 Ω_posterior_likelihood = solve(cov(X))
