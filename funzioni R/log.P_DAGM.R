@@ -1,4 +1,4 @@
-P_DAGM <- function(S,n, DAGM, a, U) { 
+log.P_DAGM <- function(S,n, DAGM, a, U) { 
   #VERSIONE DI P_DAG CON MATRICE DI ADIACENZA: DAGM: 
   source("log.p_XA.R")
   
