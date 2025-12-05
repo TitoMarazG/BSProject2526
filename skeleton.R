@@ -1,4 +1,4 @@
-myskeleton <- function (suffStat, indepTest, alpha, labels, p, method = c("stable", 
+my_skeleton <- function (suffStat, indepTest, alpha, labels, p, method = c("stable", 
                                                             "original", "stable.fast"), m.max = Inf, fixedGaps = NULL, 
           fixedEdges = NULL, NAdelete = TRUE, numCores = 1, verbose = FALSE) 
 {
