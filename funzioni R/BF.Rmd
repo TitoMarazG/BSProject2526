@@ -7,57 +7,59 @@ output: html_document
 
 # FILE TUTTO IN UNO
 
+## Skeleton
+
+```{r skeleton}
+
+```
+
+
 ## BF
 
-Dobbiamo ragionare sugli input, uno dei tre è ridondante. Dobbiamo capire come scorreremo i nodi e i rispettivi parents e families.
-Secondo me e Arianna è più comodo passare D1 e il nodo da testare, il motivo è il seguente: se noi partiamo da un grafo completely edged, ha senso dare in input il DAG CON l'edge (cioè D1) e il nodo_da_testare, il nodo da testare viene scorso lungo tutti i nodi del grafo: togliendo gli edges connessi al nodo_da_testare da D1 recuperiamo D0, questa è una cosa che possiamo fare BF.
+In input alla funzione BF abbiamo:
 
-Idea codice globale:
-Dobbiamo fare un ciclo for sui nodi del grafo.
-All'inizio abbiamo il grafo completely edged, cioè una matrice di 1 (**sulla diagonale 0? Da capire la convenzione da usare**), la nostra matrice di adiacenza iniziale. Scorriamo le colonne:
-per ogni colonna/nodo_da_testare chiamiamo BF con D1 = grafo completely edged, dentro BF cotruiamo D0 togliendo un edge collegato a nodo_da_testare per volta (for dentro al for), calcoliamo il BF. Ciò che restituisce BF è un valore numerico. **FINE DI BF**
-Dentro al for, ma fuori da BF controlliamo il valore restituito da BF con le soglie  (le soglie vanno definite in un secondo momento per noi, ma vanno date prima in input o comunque definite prima del for **asterisco**), decidiamo se tenere o meno l'edge, che tornando alla matrice di 1 vuol dire togliere o lasciare l'1.
-Finito il for avremo lo skeleton.
+- XX: Sum Squares of data
+- n: numero di osservazioni
+- a: parametro prior
+- U: parametro prior
+- u: parent del nodo da testare
+- v: nodo da testare
+- S: parents del nodo da testare senza l'arco entrante
 
-**asterisco**: domanda per prof: le soglie saranno fisse? o varieranno in base a qualcosa? tipo dimensione dataset, tipo numero nodi, tipo?????
-**asterisco**: future development?: Usiamo una soglia sola? O più soglie, sarebbe carino avere dei livelli di dipendenza(?), più c'è dipendenza più sarà graficaemente spesso l'edge
-
-Il seguente codice per calcolare BF è una bozza! Perché bisogna capire bene quali sono gli input, di sopra è scritta l'idea generale.
-
-```{r BF}
-BF <- function(S, n, a, U, D0, D1, nodo_da_testare){
-  return (exp(log.P_DAGM_puntuale(S,n, a, U, D0, nodo_da_testare) - log.P_DAGM_puntuale(S,n, a, U, D1, nodo_da_testare)))
+```{r BF(XX, n, a, U, u, v, S)}
+BF <- function(XX, n, a, U, u, v, S){
+  return (exp(log.P_DAGM_puntuale(XX, n, a, U, v, S) - log.P_DAGM_puntuale(XX,n, a, U, v, c(S, u))))
 }
 ```
 
-## log.P_DAGM_puntuale(S, n, a, U, DAGM, nodo_da_testare)
+## log.P_DAGM_puntuale(XX, n, a, U, nodo_da_testare, nodo_da_testare)
 
-```{r log.P_DAGM_puntuale(S, n, a, U, DAGM, nodo_da_testare)}
-log.P_DAGM_puntuale <- function(S, n, a, U, DAGM, nodo_da_testare) {
-  pa <- which(DAGM[, nodo_da_testare] == 1)
-  fa <- c(pa,i)
-  if(any(pa != 0)){
-  return(log.p_XA(S,n,a,U,fa) - log.p_XA(S,n,a,U,pa))
-  }
-  else {
-    return(log.p_XA(S,n,a,U,fa))
-  }
+Versione di P_DAG_puntuale con matrice di adiacenza PDAGM:
+
+- v è il nodo da testare nel DAGM
+- S sono i parents del nodo da testare nel DAGM
+- c(S, v) è la family del nodo da testare nel DAGM con l'arco entrante
+
+```{r log.P_DAGM_puntuale(XX, n, a, U, nodo_da_testare, parents)}
+log.P_DAGM_puntuale <- function(XX, n, a, U, v, S) {
+  return(log.p_XA(XX, n, a, U, c(S, v)) - log.p_XA(XX, n, a, U, S))
 }
+
 ```
 
 ## log.p(XA)
 
 ```{r log.p(XA)}
-log.p_XA <- function(S, n, a, U, A){
-  nonA <- setdiff(1:ncol(S), A)
+log.p_XA <- function(XX, n, a, U, A){
+  nonA <- setdiff(1:ncol(XX), A)
   A.c <- length(A)  # cardinalità di A
   nonA.c <- length(nonA)  # cardinalità di nonA
   UAA <- U[A, A, drop = FALSE] #####
-  SAA <- S[A, A, drop = FALSE]
+  XXAA <- XX[A, A, drop = FALSE]
   
   return(log(2*pi) * (-n*A.c/2)
          + log.norm_cost(a-nonA.c, UAA)
-         - log.norm_cost(a+n-nonA.c, UAA+SAA))
+         - log.norm_cost(a+n-nonA.c, UAA+XXAA))
 }
 ```
 
