@@ -1,6 +1,6 @@
-skeleton <- function (suffStat, indepTest, alpha, labels, p, method = c("stable", 
-                                                            "original", "stable.fast"), m.max = Inf, fixedGaps = NULL, 
-          fixedEdges = NULL, NAdelete = TRUE, numCores = 1, verbose = FALSE) 
+my_skeleton <- function (suffStat, indepTest, alpha, labels, p, method = c("stable", 
+                                                                        "original", "stable.fast"), m.max = Inf, fixedGaps = NULL, 
+                      fixedEdges = NULL, NAdelete = TRUE, numCores = 1, verbose = FALSE) 
 {
   cl <- match.call()
   if (!missing(p)) 
@@ -87,34 +87,34 @@ skeleton <- function (suffStat, indepTest, alpha, labels, p, method = c("stable"
             G.l[[x]]
           else G[, x]
           nbrsBool[y] <- FALSE
-          nbrs <- seq_p[nbrsBool]
+          nbrs <- seq_p[nbrsBool]      #vettore degli indici dei vicini
           length_nbrs <- length(nbrs)
           if (length_nbrs >= ord) {
             if (length_nbrs > ord) 
               done <- FALSE
-            S <- seq_len(ord)
+            S <- seq_len(ord)        #conditioning set (non sono le variabili, ma gli indici dentro nbrs)
             repeat {
               n.edgetests[ord1] <- n.edgetests[ord1] + 
                 1
-              pval <- indepTest(x, y, nbrs[S], suffStat)
+              BF <- BF(suffStat, x, y, nbrs[S])
               if (verbose) 
                 cat("x=", x, " y=", y, " S=", nbrs[S], 
-                    ": pval =", pval, "\n")
-              if (is.na(pval)) 
-                pval <- as.numeric(NAdelete)
-              if (pMax[x, y] < pval) 
-                pMax[x, y] <- pval
-              if (pval >= alpha) {
-                G[x, y] <- G[y, x] <- FALSE
-                sepset[[x]][[y]] <- nbrs[S]
+                    ": BF =", BF, "\n")
+              if (is.na(BF))                      #Se il test fallisce
+                BF <- as.numeric(NAdelete)
+              if (pMax[x, y] < BF) 
+                pMax[x, y] <- BF      #Salva il massimo p-value osservato finora per quella coppia (x,y) tra i vari conditioning set provati.
+              if (BF >= alpha) {
+                G[x, y] <- G[y, x] <- FALSE   # l’arco non deve esserci nello skeleton, lo elimino in G
+                sepset[[x]][[y]] <- nbrs[S]   # salvo il separating set
                 break
               }
               else {
                 nextSet <- getNextSet(length_nbrs, ord, 
-                                      S)
+                                      S)        # genera la prossima combinazione di indici
                 if (nextSet$wasLast) 
                   break
-                S <- nextSet$nextSet
+                S <- nextSet$nextSet   # aggiorni e e ripeti il test
               }
             }
           }
@@ -138,3 +138,4 @@ skeleton <- function (suffStat, indepTest, alpha, labels, p, method = c("stable"
       max.ord = as.integer(ord - 1), n.edgetests = n.edgetests, 
       sepset = sepset, pMax = pMax, zMin = matrix(NA, 1, 1))
 }
+
