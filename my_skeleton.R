@@ -1,7 +1,22 @@
 my_skeleton <- function (suffStat, indepTest, alpha, labels, p, method = c("stable", 
                                                                         "original", "stable.fast"), m.max = Inf, fixedGaps = NULL, 
-                      fixedEdges = NULL, NAdelete = TRUE, numCores = 1, verbose = FALSE) 
+                      fixedEdges = NULL, NAdelete = TRUE, numCores = 1, verbose = FALSE)
+  #INPUT DI BF: DA ESTRARRE O INSERIRE NELLA CHIAMATA
+  #XX = X(T) * X
+  #n sample size
+  #a prior degrees of freedom
+  #U prior scale matrix
+  #u nodo genitore
+  #v nodo figlio
+  #S: parents di entrambi
+  
+  
+  #INSERIRE E ADATTARE GLI INPUT DI MY_SKELETON A QUELLI DI BF
+  #AGGIUNGERE HYPERPARAMETERS (a,U)
+  #ESTRARRE DA G I NODI/PARENTS ECC:MATRICE DI ADIACENZA BOOLEANA Gij= FALSE/TRUE
+  
 {
+  #controllo coerenza input (da modificare una volta definiti e adattati gli input a BF)
   cl <- match.call()
   if (!missing(p)) 
     stopifnot(is.numeric(p), length(p <- as.integer(p)) == 
@@ -41,6 +56,8 @@ my_skeleton <- function (suffStat, indepTest, alpha, labels, p, method = c("stab
   if (numCores > 1 && method != "stable.fast") {
     warning("Argument numCores ignored: parallelization only available for method = 'stable.fast'")
   }
+  #METODO CHE CHIAMA FUNZIONE IN C++ PER STIMA SKELETON, DA APPROFONDIRE E ADATTARE LA PARTE IN C++
+  #VA TROVATA E RISCRITTA LA FUNZIONE CHE VIENE CHIAMATA DAL CODICE CON CALL.
   if (method == "stable.fast") {
     if (identical(indepTest, gaussCItest)) 
       indepTestName <- "gauss"
@@ -57,6 +74,7 @@ my_skeleton <- function (suffStat, indepTest, alpha, labels, p, method = c("stab
     n.edgetests <- res$n.edgetests
     ord <- length(n.edgetests) - 1L
   }
+  #METODO CHE CHIAMA FUNZIONE IN R PER STIMA SKELETON: classic
   else {
     pval <- NULL
     sepset <- lapply(seq_p, function(.) vector("list", p))
@@ -65,16 +83,21 @@ my_skeleton <- function (suffStat, indepTest, alpha, labels, p, method = c("stab
     done <- FALSE
     ord <- 0L
     n.edgetests <- numeric(1)
+    #dubbio: ord tiene conto del numero di vicini su cui viene effettuato il test
+    #il nostro test dovrebbe sostituire totalmente questo meccanismo o lo fissa a k=1?
+    
     while (!done && any(G) && ord <= m.max) {
       n.edgetests[ord1 <- ord + 1L] <- 0
       done <- TRUE
       ind <- which(G, arr.ind = TRUE)
+      #ind contiene gli indici delle coppie di nodi ancora connessi da un arco
       ind <- ind[order(ind[, 1]), ]
       remEdges <- nrow(ind)
       if (verbose) 
         cat("Order=", ord, "; remaining edges:", remEdges, 
             "\n", sep = "")
-      if (method == "stable") {
+      if (method == "stable") { 
+        #tiene fermo dag mentre si tolgono gli archi :stable alla permutazione dei dati
         G.l <- split(G, gl(p, p))
       }
       for (i in 1:remEdges) {
@@ -96,6 +119,7 @@ my_skeleton <- function (suffStat, indepTest, alpha, labels, p, method = c("stab
             repeat {
               n.edgetests[ord1] <- n.edgetests[ord1] + 
                 1
+              #adattare input di indepTest a BF: suffstat -> XX... n,a,U,u,v,S
               BF <- BF(suffStat, x, y, nbrs[S])
               if (verbose) 
                 cat("x=", x, " y=", y, " S=", nbrs[S], 
@@ -104,7 +128,7 @@ my_skeleton <- function (suffStat, indepTest, alpha, labels, p, method = c("stab
                 BF <- as.numeric(NAdelete)
               if (pMax[x, y] < BF) 
                 pMax[x, y] <- BF      #Salva il massimo p-value osservato finora per quella coppia (x,y) tra i vari conditioning set provati.
-              if (BF >= alpha) {
+              if (BF >= alpha) { #alpha in questo caso cambia significato ma non funzione: è comunque una "soglia"
                 G[x, y] <- G[y, x] <- FALSE   # l’arco non deve esserci nello skeleton, lo elimino in G
                 sepset[[x]][[y]] <- nbrs[S]   # salvo il separating set
                 break
