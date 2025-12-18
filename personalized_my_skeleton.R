@@ -52,11 +52,16 @@ getNextSet <- function (n, k, set) {
   list(nextSet = set, wasLast = wasLast)
 }
 
+<<<<<<< Updated upstream
 # ==============================================================================
 # 3. MY_SKELETON (Bayesian Version)
 # ==============================================================================
 my_skeleton <- function (X, a, U,  # QUESTI SONO GLI INPUT PER IL CASO BAYESIANO
                          BayesTest = BF_Gaussian,  # CHE PRIMA ERA indepTest
+=======
+my_skeleton <- function (X, a, U,  # QUESTI SONO GLI INPUT PER IL CASO BAYESIANO
+                         BayesTest,  # CHE PRIMA ERA indepTest
+>>>>>>> Stashed changes
                          alpha,  # DIVENTA LA SOGLIA
                          #labels, p,  # QUESTI NON SERVONO PIù DATO CHE DIAMO IN INPUT X (cioè XX e n)
                          method = c("stable", "original", "stable.fast"),  # stable.fast servirà per quando useremo C++
@@ -143,7 +148,11 @@ my_skeleton <- function (X, a, U,  # QUESTI SONO GLI INPUT PER IL CASO BAYESIANO
     # SETTO LE VARIABILI PER FARE: IL CICLO WHILE (CUORE DELL'ALGORITMO)
     sepset <- lapply(seq_p, function(.) vector("list", p))  # SEPARATION SETS
     valMax <- matrix(-Inf, nrow = p, ncol = p)  # MATRICE DEI P-VALUES MASSIMI
+<<<<<<< Updated upstream
     diag(valMax) <- Inf  # LE DIAGONALI SONO 1 (MA VANNO RAGIONATI)
+=======
+    diag(valMax) <- 1  # LE DIAGONALI SONO 1 (PERCHÉ SONO I P-VALUES DELLE VARIABILI CON SE STESSE)
+>>>>>>> Stashed changes
     
     done <- FALSE  # VARIABILE BOOLEANA PER USCIRE DAL CICLO WHILE
     ord <- 0L  # ORD SAREBBE LA DIMENSIONE DEI CONDITIONING SETS
@@ -165,10 +174,16 @@ my_skeleton <- function (X, a, U,  # QUESTI SONO GLI INPUT PER IL CASO BAYESIANO
       if (verbose) 
         cat("Order=", ord, "; remaining edges:", remEdges, 
             "\n", sep = "")
+<<<<<<< Updated upstream
       
       #METHOD STABLE, VA INDAGATO O CHIEDERE AL PROF SE RIMANERE SU STABLE O ORIGINAL
       if (method == "stable") {
         G.l <- split(G, gl(p, p)) 
+=======
+      #METHOD STABLE
+      if (method == "stable") {
+        G.l <- split(G, gl(p, p))
+>>>>>>> Stashed changes
       }
       
       for (i in 1:remEdges) {  # SCORRIAMO I REMAINING EDGES
@@ -197,7 +212,11 @@ my_skeleton <- function (X, a, U,  # QUESTI SONO GLI INPUT PER IL CASO BAYESIANO
               n.edgetests[ord1] <- n.edgetests[ord1] + 1
               
               # CHIAMATA DEL BF TEST
+<<<<<<< Updated upstream
               BFval <- BayesTest(XX, n, a, U, x, y, nbrs[S])
+=======
+              BFval <- BF(XX, n, a, U, x, y, nbrs[S])
+>>>>>>> Stashed changes
               
               #VERBOSE
               if (verbose) 
@@ -210,14 +229,21 @@ my_skeleton <- function (X, a, U,  # QUESTI SONO GLI INPUT PER IL CASO BAYESIANO
               if (valMax[x, y] < BFval) 
                 valMax[x, y] <- BFval  #Salva il massimo BFvalue osservato finora per quella coppia (x,y) tra i vari conditioning set provati.
               
+<<<<<<< Updated upstream
               # CONTROLLARE COL PROF, DUBBIO DELLA LOGICA, FORSE VANNO SALVATI I valmin?
+=======
+>>>>>>> Stashed changes
               if (BFval >= alpha) {
                 G[x, y] <- G[y, x] <- FALSE   # l’arco non deve esserci nello skeleton, lo elimino in G
                 sepset[[x]][[y]] <- nbrs[S]   # salvo il separating set
                 break
               }
               else {
+<<<<<<< Updated upstream
                 nextSet <- getNextSet(length_nbrs, ord, S)  # genera la prossima combinazione di indici
+=======
+                nextSet <- getNextSet(length_nbrs, ord, S)        # genera la prossima combinazione di indici
+>>>>>>> Stashed changes
                 if (nextSet$wasLast) 
                   break
                 S <- nextSet$nextSet   # aggiorni e e ripeti il test
@@ -228,7 +254,11 @@ my_skeleton <- function (X, a, U,  # QUESTI SONO GLI INPUT PER IL CASO BAYESIANO
       }
       ord <- ord + 1L  # RIFACCIO TUTTO CON L'ORDINE DEI SEPARATION AUMENTATO DI 1
     }
+<<<<<<< Updated upstream
     # QUI RENDO SIMMETRICA LA MATRICE DEI BF MASSIMI, DUBBIO?
+=======
+    # QUI RENDO SIMMETRICA LA MATRICE DEI BF MASSIMI
+>>>>>>> Stashed changes
     for (i in 1:(p - 1)) {
       for (j in 2:p) valMax[i, j] <- valMax[j, i] <- max(valMax[i, j], valMax[j, i])
     }
