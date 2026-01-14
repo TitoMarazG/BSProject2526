@@ -52,16 +52,13 @@ getNextSet <- function (n, k, set) {
   list(nextSet = set, wasLast = wasLast)
 }
 
-<<<<<<< Updated upstream
+
 # ==============================================================================
 # 3. MY_SKELETON (Bayesian Version)
 # ==============================================================================
-my_skeleton <- function (X, a, U,  # QUESTI SONO GLI INPUT PER IL CASO BAYESIANO
-                         BayesTest = BF_Gaussian,  # CHE PRIMA ERA indepTest
-=======
+
 my_skeleton <- function (X, a, U,  # QUESTI SONO GLI INPUT PER IL CASO BAYESIANO
                          BayesTest,  # CHE PRIMA ERA indepTest
->>>>>>> Stashed changes
                          alpha,  # DIVENTA LA SOGLIA
                          #labels, p,  # QUESTI NON SERVONO PIù DATO CHE DIAMO IN INPUT X (cioè XX e n)
                          method = c("stable", "original", "stable.fast"),  # stable.fast servirà per quando useremo C++

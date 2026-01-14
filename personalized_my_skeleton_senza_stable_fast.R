@@ -60,6 +60,7 @@ my_skeleton <- function (X, a, U,  # INPUT BAYESIANI
                          alpha,  # SOGLIA BF
                          method = c("BayesTest", "original"), 
                          m.max = Inf,
+                         saveBF = TRUE,
                          fixedGaps = NULL, fixedEdges = NULL, NAdelete = TRUE, numCores = 1, verbose = FALSE) 
 {
   cl <- match.call() 
@@ -106,6 +107,21 @@ my_skeleton <- function (X, a, U,  # INPUT BAYESIANI
   # -------------------------------------------------------------------------
   
   # BLOCCO R PURO (Stable / Original)
+  
+  #Inizializzazione struttura dati per salvare i BFval:
+  #BF_history[[i]][[j]] conterrà la lista dei BF calcolati per il test di indipendenza tra i nodi i e j
+  # si tratta di un data frame, ogni riga è un test con le colonne:
+  # # S: il set di condizionamento usato
+  # # BF: il valore di Bayes Factor calcolato
+  # # ord: l'ordine del test (lunghezza di S)
+  
+  if (saveBF) {
+    # Create a list of length p, where each element is a list of length 
+    BF_history <- vector("list", p)
+    for (i in 1:p) {
+      BF_history[[i]] <- vector("list", p)
+    }
+  }
   
   # Setup variabili ciclo
   sepset <- lapply(seq_p, function(.) vector("list", p)) 
@@ -160,6 +176,23 @@ my_skeleton <- function (X, a, U,  # INPUT BAYESIANI
             # CHIAMATA DEL BF TEST (Corretto: usa BayesTest e i nuovi input)
             BFval <- BayesTest(XX, n, a, U, x, y, nbrs[S])
             
+            # Salvataggio BFval su df
+            if (saveBF) {
+              # è simmetrico, salviamo solo una volta: x<y
+              u <- min(x, y)
+              v <- max(x, y)
+              
+              # creo riga da salvare nella struttura dati
+              current_test <- list(ord = ord, S = nbrs[S], BF = BFval)
+              
+              # Aggiungo riga al data frame in posizione corretta (u,v)
+              BF_history[[u]][[v]] <- c(BF_history[[u]][[v]], list(current_test))
+            }
+            
+            
+            #NON HA MOLTO SENSO DI AVERE ENTRAMBI saveBF/valmax/verbose
+            #attivi allo stesso tempo
+            
             if (verbose) cat("x=", x, " y=", y, " S=", nbrs[S], ": BF =", BFval, "\n")
             
             if (is.na(BFval)) BFval <- as.numeric(NAdelete)
@@ -197,9 +230,15 @@ my_skeleton <- function (X, a, U,  # INPUT BAYESIANI
     as(G, "graphNEL") 
   }
   
-  # Creazione oggetto pcAlgo.
-  # pMax = valMax (Corretto: passiamo i BF massimi nello slot pMax)
-  new("pcAlgo", graph = Gobject, call = cl, n = integer(0), 
-      max.ord = as.integer(ord - 1), n.edgetests = n.edgetests, 
-      sepset = sepset, pMax = valMax, zMin = matrix(NA, 1, 1))
+  # Creazione oggetto pcAlgo e assegnamento a variabile res_object
+  # (per compatibilità con pcalg)
+  res_object <- new("pcAlgo", graph = Gobject, call = cl, n = integer(0), 
+                    max.ord = as.integer(ord - 1), n.edgetests = n.edgetests, 
+                    sepset = sepset, pMax = valMax, zMin = matrix(NA, 1, 1))
+  
+  if (saveBF) {
+    return(list(object = res_object, BF_history = BF_history))
+  } else {
+    return(res_object)
+  }
 }
