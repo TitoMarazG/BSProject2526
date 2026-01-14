@@ -116,7 +116,7 @@ my_skeleton <- function (X, a, U,  # QUESTI SONO GLI INPUT PER IL CASO BAYESIANO
   if (numCores > 1 && method != "stable.fast") {
     warning("Argument numCores ignored: parallelization only available for method = 'stable.fast'")
   }
-  
+  "
   # ## STABLE FAST ## CIOÈ LA VERSIONE CHE RICHIAMA LA FUNZIONE DA C++
   if (method == "stable.fast") {
     if (identical(indepTest, gaussCItest)) 
@@ -140,7 +140,7 @@ my_skeleton <- function (X, a, U,  # QUESTI SONO GLI INPUT PER IL CASO BAYESIANO
     ord <- length(n.edgetests) - 1L  # MASSIMO ORDINE RAGGIUNTO
   }
   # QUI FINISCE stable.fast, DOVREMO IMPLEMENTARLO DA C++
-  
+  "
   else {
     # ## NOT STABLE FAST ##
     # ORA RIMANGO DENTRO R: QUI INIZIA L'IMPLEMENTAZIONE DELL'ALGORITMO PC STABLE ORIGINALE E STABLE
@@ -178,12 +178,12 @@ my_skeleton <- function (X, a, U,  # QUESTI SONO GLI INPUT PER IL CASO BAYESIANO
       
       #METHOD STABLE, VA INDAGATO O CHIEDERE AL PROF SE RIMANERE SU STABLE O ORIGINAL
       if (method == "stable") {
-        G.l <- split(G, gl(p, p)) 
-=======
-      #METHOD STABLE
-      if (method == "stable") {
-        G.l <- split(G, gl(p, p))
->>>>>>> Stashed changes
+        G.l <- split(G, gl(p, p))  # (G.l[[x]] è la colonna x-esima di G)
+                                   # è come se facessi una foto dei vicini attuali
+                                   # così che l'algoritmo scorra i vicini fotografati in G.l
+                                   #  e non quelli in G (in cui magari abbiamo rimosso un nodo
+                                   #  ed evitiamo che facendo il test con l'ordine delle colonne diverso
+                                   #  si ottenga un risultato diverso)
       }
       
       for (i in 1:remEdges) {  # SCORRIAMO I REMAINING EDGES
@@ -229,10 +229,7 @@ my_skeleton <- function (X, a, U,  # QUESTI SONO GLI INPUT PER IL CASO BAYESIANO
               if (valMax[x, y] < BFval) 
                 valMax[x, y] <- BFval  #Salva il massimo BFvalue osservato finora per quella coppia (x,y) tra i vari conditioning set provati.
               
-<<<<<<< Updated upstream
-              # CONTROLLARE COL PROF, DUBBIO DELLA LOGICA, FORSE VANNO SALVATI I valmin?
-=======
->>>>>>> Stashed changes
+              # CONTROLLARE COL PROF, DUBBIO DELLA LOGICA?
               if (BFval >= alpha) {
                 G[x, y] <- G[y, x] <- FALSE   # l’arco non deve esserci nello skeleton, lo elimino in G
                 sepset[[x]][[y]] <- nbrs[S]   # salvo il separating set
@@ -265,15 +262,21 @@ my_skeleton <- function (X, a, U,  # QUESTI SONO GLI INPUT PER IL CASO BAYESIANO
   }
   
   # QUI SI COSTRUSCE L'OGGETTO GRAFO E RITORNA IL RISULTATO
+  # Converto la matrice di adiacenza G in un oggetto standard 'graphNEL' (gestendo etichette e caso vuoto).
   Gobject <- if (sum(G) == 0) {
     new("graphNEL", nodes = labels)
   }
   else {
     colnames(G) <- rownames(G) <- labels
-    as(G, "graphNEL")
+    as(G, "graphNEL")  # Graph Node and Edge List, qui si converte G nel grafo (V,E),
+                       # è il formato standard usato in bioinformatica su R per gestire i grafi (fonte Gemini)
   }
+  # Costruisco l'oggetto S4 "pcAlgo" per garantire compatibilità con le funzioni standard del pacchetto pcalg (es. plot, orientamento).
+  # NOTA: "pMax" qui memorizza i Bayes Factor massimi (evidenza indipendenza) al posto dei p-values.
+  # "sepset" viene salvato perché essenziale per la successiva fase di orientamento degli archi (V-structures),
+  # anche se per lo scopo del progetto non serve
   new("pcAlgo", graph = Gobject, call = cl, n = integer(0), 
       max.ord = as.integer(ord - 1), n.edgetests = n.edgetests, 
-      sepset = sepset, pMax = pMax, zMin = matrix(NA, 1, 1))
+      sepset = sepset, pMax = valMax, zMin = matrix(NA, 1, 1))
 }
 

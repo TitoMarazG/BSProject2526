@@ -1,17 +1,60 @@
----
-title: "BF"
-author: "Leo"
-date: "2025-12-03"
-output: html_document
----
+# ==============================================================================
+# 1. FUNZIONI AUSILIARIE (BF e calcolo BGe Score)
+# ==============================================================================
+# Logica: BF > soglia implica che u non aggiunge info a v dato S -> Indipendenza
+BF_Gaussian <- function(XX, n, a, U, u, v, S){
+  return (exp(log.P_DAGM_puntuale(XX, n, a, U, v, S) - log.P_DAGM_puntuale(XX,n, a, U, v, c(S, u))))
+}
 
-# FILE TUTTO IN UNO
+log.P_DAGM_puntuale <- function(XX, n, a, U, v, S) {
+  return(log.p_XA(XX, n, a, U, c(S, v)) - log.p_XA(XX, n, a, U, S))
+}
 
-## Skeleton
+log.p_XA <- function(XX, n, a, U, A){
+  nonA <- setdiff(1:ncol(XX), A)
+  A.c <- length(A)  # cardinalità di A
+  nonA.c <- length(nonA)  # cardinalità di nonA
+  
+  # Gestione indici: U e XX devono essere subsettabili
+  UAA <- U[A, A, drop = FALSE] 
+  XXAA <- XX[A, A, drop = FALSE]
+  
+  return(log(2*pi) * (-n*A.c/2)
+         + log.norm_cost(a-nonA.c, UAA)
+         - log.norm_cost(a+n-nonA.c, UAA+XXAA))
+}
 
-This is the code of my_skeleton without the stable.fast part (without using C++)
+log.norm_cost <- function(a, U){
+  q = ncol(U)
+  return(a/2*log(det(U))
+         - a*q/2*log(2)
+         - log.multivariate_gamma(q, a/2))
+}
 
-```{r skeleton}
+log.multivariate_gamma <- function(p, x){
+  val = 0
+  for(j in 1:p)
+    val = val + lgamma(x+(1-j)/2)
+  return(p*(p-1)/4*log(pi) + val)
+}
+
+# ==============================================================================
+# 2. FUNZIONE getNextSet (Necessaria per le combinazioni)
+# ==============================================================================
+getNextSet <- function (n, k, set) {
+  chInd <- k - (zeros <- sum((seq(n - k + 1, n) - set) == 0))
+  wasLast <- (chInd == 0)
+  if (!wasLast) {
+    set[chInd] <- s.ch <- set[chInd] + 1
+    if (chInd < k) 
+      set[(chInd + 1):k] <- seq(s.ch + 1L, s.ch + zeros)
+  }
+  list(nextSet = set, wasLast = wasLast)
+}
+
+# ==============================================================================
+# 3. MY_SKELETON (Bayesian Version)
+# ==============================================================================
 my_skeleton <- function (X, a, U,  # INPUT BAYESIANI
                          BayesTest = BF_Gaussian,  # Default alla tua funzione
                          alpha,  # SOGLIA BF
@@ -160,108 +203,3 @@ my_skeleton <- function (X, a, U,  # INPUT BAYESIANI
       max.ord = as.integer(ord - 1), n.edgetests = n.edgetests, 
       sepset = sepset, pMax = valMax, zMin = matrix(NA, 1, 1))
 }
-```
-
-### getNextSet
-
-Function used for changing conditioning set while exploring all the conditioning sets.
-
-```{r getNextSet}
-getNextSet <- function (n, k, set) {
-  chInd <- k - (zeros <- sum((seq(n - k + 1, n) - set) == 0))
-  wasLast <- (chInd == 0)
-  if (!wasLast) {
-    set[chInd] <- s.ch <- set[chInd] + 1
-    if (chInd < k) 
-      set[(chInd + 1):k] <- seq(s.ch + 1L, s.ch + zeros)
-  }
-  list(nextSet = set, wasLast = wasLast)
-}
-```
-
-## BF
-
-In input alla funzione BF abbiamo:
-
-- XX: Sum Squares of data
-- n: numero di osservazioni
-- a: parametro prior
-- U: parametro prior
-- u: parent del nodo da testare
-- v: nodo da testare
-- S: parents del nodo da testare senza l'arco entrante
-
-```{r BF(XX, n, a, U, u, v, S)}
-BF <- function(XX, n, a, U, u, v, S){
-  return (exp(log.P_DAGM_puntuale(XX, n, a, U, v, S) - log.P_DAGM_puntuale(XX,n, a, U, v, c(S, u))))
-}
-```
-
-## log.P_DAGM_puntuale(XX, n, a, U, nodo_da_testare, nodo_da_testare)
-
-Versione di P_DAG_puntuale con matrice di adiacenza PDAGM:
-
-- v è il nodo da testare nel DAGM
-- S sono i parents del nodo da testare nel DAGM
-- c(S, v) è la family del nodo da testare nel DAGM con l'arco entrante
-
-```{r log.P_DAGM_puntuale(XX, n, a, U, nodo_da_testare, parents)}
-log.P_DAGM_puntuale <- function(XX, n, a, U, v, S) {
-  return(log.p_XA(XX, n, a, U, c(S, v)) - log.p_XA(XX, n, a, U, S))
-}
-
-```
-
-## log.p(XA)
-
-```{r log.p(XA)}
-log.p_XA <- function(XX, n, a, U, A){
-  if (length(A) == 0) {
-    return (0)
-  }else{
-    nonA <- setdiff(1:ncol(XX), A)
-    A.c <- length(A)  # cardinalità di A
-    nonA.c <- length(nonA)  # cardinalità di nonA
-    UAA <- U[A, A, drop = FALSE] #####
-    XXAA <- XX[A, A, drop = FALSE]
-  
-    return(log(2*pi) * (-n*A.c/2)
-          + log.norm_cost(a-nonA.c, UAA)
-          - log.norm_cost(a+n-nonA.c, UAA+XXAA))
-  }
-}
-```
-
-### log.norm_cost(a, U)
-
-```{r}
-log.norm_cost <- function(a, U){
-  q = ncol(U)
-  return(a/2*log(det(U))
-         - a*q/2*log(2)
-         - log.multivariate_gamma(q, a/2))
-}
-```
-
-### log.multivariate_gamma(p, x)
-
-```{r log.multivariate_gamma(p, x)}
-log.multivariate_gamma <- function(p, x){
-  val = 0
-  for(j in 1:p)
-    val = val + lgamma(x+(1-j)/2)
-  return(p*(p-1)/4*log(pi)
-         + val)
-}
-```
-
-
-```{r test for BF}
-BF(t(X) %*% X, nrow(X), a = ncol(X), U = diag(1, q), u = 1, v = 2, S = c(3, 4, 5))
-BF(t(X) %*% X, nrow(X), a = ncol(X), U = diag(1, q), u = 1, v = 2, S = c(3, 4))
-BF(t(X) %*% X, nrow(X), a = ncol(X), U = diag(1, q), u = 1, v = 2, S = c(3))
-
-BF(t(X) %*% X, nrow(X), a = ncol(X), U = diag(1, q), u = 1, v = 3, S = NULL)
-```
-
-
