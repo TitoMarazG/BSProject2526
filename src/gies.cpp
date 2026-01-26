@@ -650,3 +650,79 @@ RcppExport SEXP estimateSkeleton(
 	END_RCPP
 }
 
+
+RcppExport SEXP estimateSkeletonBayes(
+       SEXP argAdjMatrix,
+       SEXP argXX, SEXP argN, SEXP argA, SEXP argU, // Bayesian Inputs
+       SEXP argIndepTestFn,
+       SEXP argAlpha,
+       SEXP argFixedEdges,
+       SEXP argOptions)
+{
+    BEGIN_RCPP
+
+    Rcpp::List options(argOptions);
+    double alpha = Rcpp::as<double>(argAlpha);
+
+    // Package Bayesian stats into a List to pass to the R function
+    Rcpp::List suffStat = Rcpp::List::create(
+        Rcpp::Named("XX") = argXX,
+        Rcpp::Named("n") = argN,
+        Rcpp::Named("a") = argA,
+        Rcpp::Named("U") = argU
+    );
+
+    // We use IndepTestRFunction to call your R 'BayesTest'
+    // This class expects an R function that takes (suffStat, x, y, S)
+    IndepTest* indepTest = new IndepTestRFunction(&suffStat, Rcpp::Function(argIndepTestFn));
+
+    Rcpp::LogicalMatrix adjMatrix(argAdjMatrix);
+    int p = adjMatrix.nrow();
+
+    // Initialize SepSets and Graph
+    SepSets sepSet(p, std::vector<arma::ivec>(p, arma::ivec(1)));
+    Rcpp::LogicalMatrix fixedMatrix(argFixedEdges);
+    Skeleton graph(p);
+    Rcpp::NumericMatrix bfMax(p, p); // We rename pMax to bfMax for clarity
+    bfMax.fill(-1.0);
+
+    std::vector<int> edgeTests(1);
+    std::vector<uint> emptySet;
+
+    // --- Order 0 Tests ---
+    for (int i = 0; i < p; i++) {
+       for (int j = i + 1; j < p; j++) {
+          if (adjMatrix(i, j) && !fixedMatrix(i, j)) {
+             // Calling the R function: BayesTest(XX, n, a, U, x, y, S)
+             bfMax(i, j) = indepTest->test(i, j, emptySet);
+             if (bfMax(i, j) >= alpha) {
+                sepSet[j][i].set_size(0);
+             }
+          }
+       }
+    }
+
+    // Initialize edges for Order > 0
+    for (int i = 0; i < p; i++) {
+       for (int j = i + 1; j < p; j++) {
+          if (fixedMatrix(i, j)) graph.addFixedEdge(i, j);
+          else if (adjMatrix(i, j) && bfMax(i, j) < alpha) graph.addEdge(i, j);
+       }
+    }
+
+    // --- Order > 0 Fitting ---
+    graph.setIndepTest(indepTest);
+    graph.fitCondInd(alpha, bfMax, sepSet, edgeTests,
+                     Rcpp::as<int>(options["m.max"]),
+                     Rcpp::as<bool>(options["NAdelete"]));
+
+    delete indepTest;
+
+    return Rcpp::List::create(
+          Rcpp::Named("amat") = graph.getAdjacencyMatrix(),
+          Rcpp::Named("pMax") = bfMax, // This contains the BFs
+          Rcpp::Named("sepset") = Rcpp::wrap(sepSet),
+          Rcpp::Named("n.edgetests") = edgeTests);
+
+    END_RCPP
+}
