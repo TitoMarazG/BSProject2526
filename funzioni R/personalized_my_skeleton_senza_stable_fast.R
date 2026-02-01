@@ -11,17 +11,19 @@ log.P_DAGM_puntuale <- function(XX, n, a, U, v, S) {
 }
 
 log.p_XA <- function(XX, n, a, U, A){
-  nonA <- setdiff(1:ncol(XX), A)
-  A.c <- length(A)  # cardinalità di A
-  nonA.c <- length(nonA)  # cardinalità di nonA
-  
-  # Gestione indici: U e XX devono essere subsettabili
-  UAA <- U[A, A, drop = FALSE] 
-  XXAA <- XX[A, A, drop = FALSE]
-  
-  return(log(2*pi) * (-n*A.c/2)
-         + log.norm_cost(a-nonA.c, UAA)
-         - log.norm_cost(a+n-nonA.c, UAA+XXAA))
+  if (length(A) == 0) {
+    return (0)
+  }else{
+    nonA <- setdiff(1:ncol(XX), A)
+    A.c <- length(A)  # cardinalità di A
+    nonA.c <- length(nonA)  # cardinalità di nonA
+    UAA <- U[A, A, drop = FALSE] #####
+    XXAA <- XX[A, A, drop = FALSE]
+    
+    return(log(2*pi) * (-n*A.c/2)
+           + log.norm_cost(a-nonA.c, UAA)
+           - log.norm_cost(a+n-nonA.c, UAA+XXAA))
+  }
 }
 
 log.norm_cost <- function(a, U){

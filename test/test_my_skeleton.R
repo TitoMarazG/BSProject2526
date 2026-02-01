@@ -10,7 +10,7 @@ q = 5# Fix number of nodes
 D0 = matrix(c(rep(0,q),
               rep(0, q),
               rep(c(1,1,0,0,0),3)), byrow = T, nrow = q, ncol = q)
-D0 # <- rDAG()
+D0 # <- rDAG() from library(BCDAG)
 
 ## The true DAG is D1, i.e. the one having an edge u -> v
 
@@ -21,6 +21,7 @@ diag(L) = 1
 L
 
 D = diag(rep(1, q))
+D
 
 # Build Sigma = (L')^-1 * D * (L)^-1
 Sigma = solve(t(L))%*%D%*%solve(L) 
