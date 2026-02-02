@@ -5,20 +5,22 @@ setwd("~/Documents/Bayesian/Project/BSProject2526")
 
 library(pcalg)
 library(BiocGenerics)
+library(BCDAG)
 
-set.seed(1234)  # Per riproducibilità
+set.seed(123)  # Per riproducibilità
 
 rm(list = ls()) 
 graphics.off() 
 
-source("personalized_my_skeleton_senza_stable_fast.R")
+source("/Users/leomarcellopoli/Documents/Bayesian/Project/BSProject2526/funzioni R/personalized_my_skeleton_senza_stable_fast.R")
+source("/Users/leomarcellopoli/Documents/Bayesian/Project/BSProject2526/funzioni R/compute_metrics.R")
 
 # ==============================================================================
 # PARAMETRI E CONFIGURAZIONE
 # ==============================================================================
 
 q <- 5               # Numero di nodi del grafo
-n <- 250            # Dimensione del campione
+n <- 100000            # Dimensione del campione
 w <- 0.6             # Prob di un arco nel DAG generato casualmente
 a <- q               # Parametro (da specificare meglio l'uso)
 U <- diag(1, q)      # Prior per il metodo Bayesiano
@@ -61,6 +63,7 @@ print(Sigma)
 
 # Generazione dataset multivariato normale
 X <- mvtnorm::rmvnorm(n, mean = rep(0, q), sigma = Sigma)
+head(X)
 
 # ==============================================================================
 # STIMA DEGLI SKELETON
@@ -89,15 +92,46 @@ skltn.bayes <- res.bayes$object
 # VISUALIZZAZIONE RISULTATI
 # ==============================================================================
 
-par(mfrow = c(1, 3))
-plot(DAG.true, main = "DAG Vero")
-plot(skltn.freq@graph, main = "Skeleton Frequentista")
-plot(skltn.bayes@graph, main = "Skeleton Bayesiano")
+#par(mfrow = c(1, 3))
+#plot(DAG.true, main = "DAG Vero")
+#plot(skltn.freq@graph, main = "Skeleton Frequentista")
+#plot(skltn.bayes@graph, main = "Skeleton Bayesiano")
+#dev.off()
 
 D0_skeleton <- D0 + t(D0)  # Rende la matrice simmetrica
 D0_skeleton[D0_skeleton > 0] <- 1  # Converte in 0/1
 skltn.true <- as(D0_skeleton, "graphNEL")
-print("Shd between true skeleton and frequentist skeleton = ")
-shd(skltn.true, skltn.freq@graph)
-print("Shd between true skeleton and bayesian skeleton = ")
-shd(skltn.true, skltn.bayes@graph)
+#print("Shd between true skeleton and frequentist skeleton = ")
+#print(shd(skltn.true, skltn.freq@graph))
+#print("Shd between true skeleton and bayesian skeleton = ")
+#print(shd(skltn.true, skltn.bayes@graph))
+
+eval_freq <- evaluate_graph(skltn.true, skltn.freq@graph, undirected = TRUE)
+eval_bayes <- evaluate_graph(skltn.true, skltn.bayes@graph, undirected = TRUE)
+comparison <- rbind(Frequentista = eval_freq, Bayesiano = eval_bayes)
+print(comparison)
+
+#par(mfrow = c(1, 2))
+#
+#metrics_pr <- c("Precision", "Recall")
+#colors <- c("steelblue", "coral")
+#
+#barplot(as.matrix(comparison[, metrics_pr]), 
+#        beside = TRUE, 
+#        col = colors,
+#        main = "Precision e Recall",
+#        ylab = "Valore",
+#        ylim = c(0, 1),
+#        names.arg = c("Precision", "Recall"),  
+#        legend.text = rownames(comparison),
+#        args.legend = list(x = "topright", cex = 0.8, bty = "n"))
+#
+#barplot(as.matrix(comparison[, "SHD", drop = FALSE]), 
+#        beside = TRUE, 
+#        col = colors,
+#        main = "Structural Hamming Distance",
+#        ylab = "SHD",
+#        ylim = c(0, q),  # Adatta al valore massimo
+#        names.arg = "SHD",  
+#        legend.text = rownames(comparison),
+#        args.legend = list(x = "topright", cex = 0.8, bty = "n"))  
