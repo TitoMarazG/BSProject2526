@@ -1,5 +1,3 @@
-library(BCDAG)
-
 generate_DAG <- function(q, seed, w, n){
   # q: Numero nodi
   # w: Prob di un arco nel DAG generato casualmente 
