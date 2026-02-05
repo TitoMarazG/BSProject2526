@@ -15,9 +15,9 @@ source("/Users/leomarcellopoli/Documents/Bayesian/Project/BSProject2526/funzioni
 source("/Users/leomarcellopoli/Documents/Bayesian/Project/BSProject2526/funzioni R/generate_DAG.R")
 
 # Liste di parametri da testare
-q_list <- c(5, 10, 20)
-n_list <- c(100, 500, 1000)
-repetitions <- 1:20
+q_list <- c(50, 100, 1000, 5000)
+n_list <- c(20, 50, 100)
+repetitions <- 1:30
 w <- 0.6
 seed = 3
 alpha_freq <- 0.01
@@ -190,6 +190,6 @@ for (m in metrics_to_plot) {
                                      y_label = m$label, 
                                      title_suffix = m$var) # Titolo es: "Confronto performance SHD"
   print(p_global)
-
+  
   cat(paste("\n"))
 }
