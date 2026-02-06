@@ -15,10 +15,10 @@ source("/Users/leomarcellopoli/Documents/Bayesian/Project/BSProject2526/funzioni
 source("/Users/leomarcellopoli/Documents/Bayesian/Project/BSProject2526/funzioni R/generate_DAG.R")
 
 # Liste di parametri da testare
-q_list <- c(5, 10, 20)
+q_list <- c(5, 10)
 n_list <- c(100, 500, 1000)
 repetitions <- 1:20
-w <- 0.6
+w <- 0.3
 seed = 3
 alpha_freq <- 0.01
 alpha_bayes <- 10

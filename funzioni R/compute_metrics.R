@@ -117,7 +117,7 @@ evaluate_graph <- function(true_graph, estimated_graph, undirected = TRUE) {
   prec <- precision(true_graph, estimated_graph, undirected)
   rec <- recall(true_graph, estimated_graph, undirected)
   f1 <- f1_score(true_graph, estimated_graph, undirected)
-  shd_val <- shd(true_graph, estimated_graph)
+  shd_val <- pcalg::shd(true_graph, estimated_graph)
   
   results <- data.frame(
     SHD = shd_val,

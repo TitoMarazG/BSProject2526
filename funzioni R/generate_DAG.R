@@ -12,11 +12,13 @@ generate_DAG <- function(q, seed, w, n){
     sample(c(-1, 1), size = q * q, replace = TRUE)  # Segni casuali
   diag(L) <- 1
 
-  # Matrice D (diagonale)
-  D <- diag(rep(1, q))
+  # Matrice D (diagonale) # CONTROLLARE 
+  D <- diag(rep(1, q)) # CONTROLLARE
+  omega <- L %*% solve(D) %*% t(L) # CONTROLLARE
+  Sigma <- chol2inv(omega) # CONTROLLARE
 
   # Matrice di covarianza: Sigma = (L')^(-1) * D * L^(-1)
-  Sigma <- solve(t(L)) %*% D %*% solve(L)
+  Sigma <- chol2inv(t(L)) %*% D %*% chol2inv(L) # CONTROLLARE
 
   # Generazione dataset multivariato normale
   X <- mvtnorm::rmvnorm(n = n, mean = rep(0, q), sigma = Sigma)
