@@ -7,7 +7,8 @@ library(methods)
 
 source("/Users/leomarcellopoli/Documents/Bayesian/Project/BSProject2526/funzioni R/personalized_my_skeleton_senza_stable_fast.R")
 
-# DATASET LOADING & PREPARATION ####
+#### DATASET LOADING & PREPARATION ####
+
 data(riboflavin)
 X_all <- as.matrix(riboflavin$x) 
 y <- as.numeric(riboflavin$y)    
@@ -15,7 +16,7 @@ y <- as.numeric(riboflavin$y)
 gene_variances <- apply(X_all, 2, var)
 
 # Bühlmann usa q=100.
-q_selected <- 1000  # nota: il frequentista potrebbe dare problemi
+q_selected <- 50#1000  # nota: il frequentista potrebbe dare problemi
 
 top_indices <- order(gene_variances, decreasing = TRUE)[1:q_selected]
 X_reduced <- X_all[, top_indices]
@@ -35,7 +36,8 @@ q_total <- ncol(data_final_scaled) # q_selected + 1
 cat("Dimensioni finali dataset: n =", n, "| q =", q_total, "\n")
 
 
-# METODO BAYESIANO ####
+#### METODO BAYESIANO ####
+
 cat("\n--- AVVIO METODO BAYESIANO ---\n")
 
 # Parametri
@@ -61,9 +63,9 @@ res_bayes <- tryCatch({
 
 time_end_B <- Sys.time()
 
-# ==============================================================================
-# 3. METODO FREQUENTISTA (Benchmark: SOLO SKELETON)
-# ==============================================================================
+
+#### METODO FREQUENTISTA #### 
+
 cat("\n--- AVVIO METODO FREQUENTISTA (Skeleton) ---\n")
 
 # Bühlmann 2014 usa alpha = 0.01
@@ -92,9 +94,7 @@ res_freq <- tryCatch({
 time_end_F <- Sys.time()
 
 
-# ==============================================================================
-# 4. CONFRONTO E ANALISI RISULTATI (SKELETON vs SKELETON)
-# ==============================================================================
+#### CONFRONTO E ANALISI RISULTATI (SKELETON vs SKELETON) #### 
 
 if (!is.null(res_bayes) && !is.null(res_freq)) {
   
@@ -104,11 +104,11 @@ if (!is.null(res_bayes) && !is.null(res_freq)) {
   g_bayes <- res_bayes@graph
   g_freq  <- res_freq@graph
   
-  # Metriche Globali
+  # Metriche Globali (numero totale di archi per ogni grafo)
   edges_B <- numEdges(g_bayes)
   edges_F <- numEdges(g_freq)
   
-  # --- CALCOLO SHD (Distanza Strutturale tra Skeleton) ---
+  # CALCOLO SHD (Distanza Strutturale tra Skeleton)
   shd_val <- pcalg::shd(g_bayes, g_freq)
   
   # Estrazione Matrici di Adiacenza
