@@ -1,27 +1,29 @@
 # SETUP INIZIALE================================================================
 
-setwd("/Users/leomarcellopoli/Documents/Bayesian/Project/")
+setwd("/Users/leomarcellopoli/Documents/Bayesian/Project/BSProject2526")
 
 library(pcalg)
 library(BiocGenerics)
 library(BCDAG)
 library(ggplot2)
 
-rm(list = ls()) 
-graphics.off() 
+rm(list = ls()); graphics.off(); cat("\014")
 
 source("/Users/leomarcellopoli/Documents/Bayesian/Project/BSProject2526/funzioni R/personalized_my_skeleton_senza_stable_fast.R")
 source("/Users/leomarcellopoli/Documents/Bayesian/Project/BSProject2526/funzioni R/compute_metrics.R")
 source("/Users/leomarcellopoli/Documents/Bayesian/Project/BSProject2526/funzioni R/generate_DAG.R")
 
 # Liste di parametri da testare
-q_list <- c(5, 10)
-n_list <- c(100, 500, 1000)
-repetitions <- 1:20
-w <- 0.3
+# q_list <- c(1000)                 # Nota per me stesso: con q = 1000, n = 100 ci mette un minuto e mezzo a ripetizione
+# n_list <- c(100)
+q_list <- c(50)#, 200, 1000)
+n_list <- c(100, 200, 500)
+repetitions <- 1:40
+#w <- 0.3  viene data in input come 2/q
 seed = 3
 alpha_freq <- 0.01
-alpha_bayes <- 10
+p_posterior <- 0.9
+alpha_bayes <- 1/p_posterior - 1  # come prior mettiamo
 
 # Crea lista vuota per salvare i risultati
 results_list <- list()
@@ -44,7 +46,7 @@ for (q in q_list) {
       
       # Genera DAG e dati
       seed = seed + 1
-      DD = generate_DAG(q = q, seed = seed, w = w, n = n)
+      DD = generate_DAG(q = q, seed = seed, w = 2/q, n = n)
       D0 = DD[[1]]
       X = DD[[2]]
       
@@ -130,7 +132,7 @@ plot_simulation_metric <- function(data, y_var, y_label, title_suffix, q_filter 
     ) +
     # Aggiungi titolo e assi
     labs(title = paste("Confronto performance", title_suffix),
-         subtitle = paste("Prob. edge generation =", w, "| Bayes threshold =", alpha_bayes, "| Significance level =", alpha_freq),
+         subtitle = paste("Prob. edge generation =", 2/q, "| Bayes threshold =", round(alpha_bayes, digits = 2), "| Significance level =", alpha_freq),
          x = "Sample size (n)",
          y = y_label,
          fill = "Method:") +
@@ -161,6 +163,11 @@ plot_simulation_metric <- function(data, y_var, y_label, title_suffix, q_filter 
 
 ##### GENERAZIONE GRAFICI #####
 
+# Crea una cartella "Plots" se non esiste già
+if (!dir.exists("Plots varying q & n")) {
+  dir.create("Plots varying q & n")
+}
+
 # Definiamo le metriche da stampare
 metrics_to_plot <- list(
   list(var = "Precision", label = "Precision"),
@@ -181,6 +188,13 @@ for (m in metrics_to_plot) {
                                        title_suffix = paste(m$var, "per q =", q_val),
                                        q_filter = q_val)
     print(p_single)
+    
+    # # Costruzione nome file: es. "Plots/Precision_q10.png"
+    # filename_single <- paste0("Plots/", m$var, "_q", q_val, ".png")
+    # 
+    # # Salvataggio
+    # ggsave(filename = filename_single, plot = p_single, 
+    #        width = 7, height = 5, dpi = 300)
   }
   
   # Stampa il grafico GLOBALE (con facet_wrap)
@@ -190,6 +204,13 @@ for (m in metrics_to_plot) {
                                      y_label = m$label, 
                                      title_suffix = m$var) # Titolo es: "Confronto performance SHD"
   print(p_global)
+  
+  # # Costruzione nome file: es. "Plots/Precision_Global_Comparison.png"
+  # filename_global <- paste0("Plots/", m$var, "_Global_Comparison.png")
+  # 
+  # # Salvataggio (lo facciamo più largo perché contiene più grafici affiancati)
+  # ggsave(filename = filename_global, plot = p_global, 
+  #        width = 12, height = 6, dpi = 300)
 
   cat(paste("\n"))
 }

@@ -1,0 +1,8 @@
+q_list <- c(50, 200, 1000)
+n_list <- c(100, 200, 500)
+repetitions <- 1:40
+#w <- 0.3  viene data in input come 2/q
+seed = 3
+alpha_freq <- 0.01
+p_posterior <- 0.9
+alpha_bayes <- 1/p_posterior - 1  # come prior mettiamo

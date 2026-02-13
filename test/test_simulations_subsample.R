@@ -2,15 +2,14 @@
 
 # SETUP INIZIALE================================================================
 
-setwd("/Users/leomarcellopoli/Documents/Bayesian/Project/")
+setwd("/Users/leomarcellopoli/Documents/Bayesian/Project/BSProject2526")
 
 library(pcalg)
 library(BiocGenerics)
 library(BCDAG)
 library(ggplot2)
 
-rm(list = ls()) 
-graphics.off() 
+rm(list = ls()); graphics.off(); cat("\014") 
 
 source("/Users/leomarcellopoli/Documents/Bayesian/Project/BSProject2526/funzioni R/personalized_my_skeleton_senza_stable_fast.R")
 source("/Users/leomarcellopoli/Documents/Bayesian/Project/BSProject2526/funzioni R/compute_metrics.R")
@@ -19,16 +18,17 @@ source("/Users/leomarcellopoli/Documents/Bayesian/Project/BSProject2526/funzioni
 # ==============================================================================
 # PARAMETRI PER SIMULAZIONE SUBSAMPLING
 # ==============================================================================
-q_list <- c(40)          # Numero di nodi nel DAG
-n_max  <- 400           # Dimensione totale del dataset
-n_folds <- 4             # Numero di subsample (1600 / 4 = 400 righe ciascuno)
+q_list <- c(10)#50, 200, 1000)          # Numero di nodi nel DAG
+n_max  <- 300           # Dimensione totale del dataset
+n_folds <- 3             # Numero di subsample (1600 / 4 = 400 righe ciascuno)
 sub_size <- n_max / n_folds
 
 repetitions <- 1:20      # Numero di dataset diversi generati
-w <- 0.6
+#w <- 0.3  viene data in input come 2/q
 seed = 3
 alpha_freq <- 0.01
-alpha_bayes <- 10
+p_posterior <- 0.9
+alpha_bayes <- 1/p_posterior - 1  # come prior mettiamo
 
 # Crea lista vuota per salvare i risultati
 results_list <- list()
@@ -47,7 +47,7 @@ for (q in q_list) {
     
     # 1. Genera il DAG vero e il dataset COMPLETO (n_max)
     seed = seed + 1
-    DD = generate_DAG(q = q, seed = seed, w = w, n = n_max)
+    DD = generate_DAG(q = q, seed = seed, w = 2/q, n = n_max)
     D0 = DD[[1]]      # Matrice di adiacenza vera
     X_full = DD[[2]]  # Dataset completo (1600 righe)
     
@@ -100,6 +100,13 @@ for (q in q_list) {
     
     cat("Done!\n")
   } # Fine loop repetitions
+  
+  # --- SALVATAGGIO INTERMEDIO ---
+  # Salva i risultati parziali alla fine di ogni 'q'
+  temp_df <- do.call(rbind, results_list)
+  filename_temp <- paste0("partial_results_subsampling_upto_q", q, ".rds")
+  saveRDS(temp_df, file = filename_temp)
+  cat(paste("   [Check: Risultati parziali salvati in", filename_temp, "]\n"))
 }
 
 # Risultati in un unico data frame
@@ -118,11 +125,15 @@ df_plot <- transform(
 View(results_df)
 
 # ==============================================================================
-# FUNZIONE DI PLOTTING (Adattata per Subsamples)
+# FUNZIONE DI PLOTTING (Adattata per Subsamples) - CORRETTA
 # ==============================================================================
-plot_subsample_metric <- function(data, y_var, y_label, title_suffix) {
+plot_subsample_metric <- function(data, y_var, y_label, title_suffix, q_filter = NULL) {
   
-  p <- ggplot(data, aes(x = subsample_id, y = .data[[y_var]], fill = method)) +
+  # 1. Filtra i dati se q_filter è specificato
+  plot_data <- if (!is.null(q_filter)) subset(data, q == q_filter) else data
+  
+  # 2. Crea il plot usando i dati filtrati (plot_data)
+  p <- ggplot(plot_data, aes(x = subsample_id, y = .data[[y_var]], fill = method)) +
     geom_boxplot(
       width = 0.7,
       position = position_dodge(width = 0.8),
@@ -134,8 +145,9 @@ plot_subsample_metric <- function(data, y_var, y_label, title_suffix) {
       alpha = 0.35, size = 1,
       show.legend = FALSE
     ) +
+    # Aggiungi facet_wrap se stiamo plottando tutti i q insieme (GLOBALE)
     labs(title = paste("Stability across Subsamples -", title_suffix),
-         subtitle = paste("n_max =", n_max, "| Fold size =", sub_size, "| q =", q_list),
+         subtitle = paste("n_max =", n_max, "| Fold size =", sub_size, "| q =", if(!is.null(q_filter)) q_filter else "Variable"),
          x = "Subsample ID (Disjoint Sets)",
          y = y_label,
          fill = "Method:") +
@@ -157,6 +169,11 @@ plot_subsample_metric <- function(data, y_var, y_label, title_suffix) {
       )
     )
   
+  # Se non stiamo filtrando (quindi è il plot globale), dividiamo per q
+  if (is.null(q_filter)) {
+    p <- p + facet_wrap(~ q, scales = "free_y")
+  }
+  
   return(p)
 }
 
@@ -164,6 +181,10 @@ plot_subsample_metric <- function(data, y_var, y_label, title_suffix) {
 # GENERAZIONE GRAFICI
 # ==============================================================================
 
+# Assicuriamoci che la cartella esista (ho corretto anche il nome della cartella nel path)
+if (!dir.exists("Plots_subsamples")) dir.create("Plots_subsamples")
+
+# Definiamo le metriche
 metrics_to_plot <- list(
   list(var = "Precision", label = "Precision"),
   list(var = "Recall", label = "Recall"),
@@ -171,11 +192,42 @@ metrics_to_plot <- list(
   list(var = "SHD", label = "SHD to true CPDAG")
 )
 
+# Recuperiamo le q ESISTENTI nel dataframe
+available_qs <- unique(df_plot$q)
+
+# CICLO UNICO PER TUTTE LE METRICHE
 for (m in metrics_to_plot) {
-  cat(paste("\nGenerazione plot per:", m$var, "\n"))
-  p <- plot_subsample_metric(df_plot, 
-                             y_var = m$var, 
-                             y_label = m$label, 
-                             title_suffix = m$var)
-  print(p)
+  
+  # --- B. Grafico GLOBALE ---
+  cat(paste("\nGenerazione plot globale per:", m$var))
+  
+  p_global <- plot_subsample_metric(df_plot, 
+                                    y_var = m$var, 
+                                    y_label = m$label, 
+                                    title_suffix = m$var)
+  print(p_global)
+  
+  filename_global <- paste0("Plots_subsamples/", m$var, "_Global.png")
+  ggsave(filename = filename_global, plot = p_global, 
+         width = 12, height = 6, dpi = 300)
+  
+  cat("\n")
+  
+  # --- A. Grafici SINGOLI per ogni q disponibile ---
+  for (q_val in available_qs) {
+    
+    cat(paste("\nGenerazione plot per:", m$var, "- q =", q_val))
+    
+    p_single <- plot_subsample_metric(df_plot, 
+                                      y_var = m$var, 
+                                      y_label = m$label, 
+                                      title_suffix = paste(m$var, "per q =", q_val),
+                                      q_filter = q_val) # Ora questo argomento esiste!
+    print(p_single)
+    
+    # Nota: ho corretto il path della cartella "Plots_subsamples" (senza underscore finale strano)
+    filename_single <- paste0("Plots_subsamples/", m$var, "_q", q_val, ".png")
+    ggsave(filename = filename_single, plot = p_single, 
+           width = 7, height = 5, dpi = 300)
+  }
 }
