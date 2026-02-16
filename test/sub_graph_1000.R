@@ -3,7 +3,7 @@ library(Rgraphviz)
 library(igraph)
 library(graph)
 
-res_bayes <- readRDS("C:/Users/arian/Documents/GitHub/BSProject2526/test/RDS/Riboflavin_Bayes_q1000.rds")
+res_bayes <- readRDS("C:/Users/Ascolani/Documents/bayesian Proj/BSProject2526/test/RDS/Riboflavin_Bayes_q1000.rds")
 
 skltn.bayes <- res_bayes@graph
 adj <- as(skltn.bayes, "matrix")
