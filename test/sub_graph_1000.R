@@ -54,41 +54,65 @@ if(length(neigh)>0){
   
   # # cambio colore edges in base posterior probability of edge inclusion
   
-  edge_list <- edgeL(g_sub_nel)
-  edge_cols <- character()
+  all_edge_names <- edgeNames(g_sub_nel)
+  edge_cols <- character(length(all_edge_names))
+  names(edge_cols) <- all_edge_names
   
-  for (node_from in names(edge_list)) {
-    tos <- edge_list[[node_from]]$edges
-    if (length(tos) == 0) next
-    
-    node_tos <- nodes(g_sub_nel)[tos]
-    
-    for (node_to in node_tos) {
-      # Per grafi non orientati, processiamo l'arco solo una volta (ordine alfabetico)
-      if (node_from < node_to) {
-        # Recuperiamo la probabilità dalla matrice P
-        # Se P non è simmetrica, potresti voler usare max(P[from,to], P[to,from])
-        p_val <- (P[node_from, node_to] - 0.9)/(1-0.9)
-        p_val <- p_val^2 #per aumentare contrasto
-        
-        # Gestione NA o valori fuori range
-        if (is.na(p_val)) p_val <- 0
-        
-        # Creazione colore: 1 = Nero (p=1), 0.9 = Grigio quasi bianco (p=0)
-        # alpha determina la trasparenza, o puoi usare gray()
-        col_hex <- gray(1 - p_val) 
-        
-        # La chiave DEVE essere "nodo1~nodo2"
-        edge_key <- paste0(node_from, "~", node_to)
-        edge_cols[edge_key] <- col_hex
+  # 2. Cicliamo sulla matrice P (che abbiamo reso simmetrica)
+  nodes_sub <- nodes(g_sub_nel)
+  
+  for (i in 1:length(nodes_sub)) {
+    for (j in i:length(nodes_sub)) {
+      node_i <- nodes_sub[i]
+      node_j <- nodes_sub[j]
+      
+      # Se esiste un arco tra i e j nel grafo ridotto
+      edge_key <- paste0(node_i, "~", node_j)
+      rev_edge_key <- paste0(node_j, "~", node_i)
+      
+      # Troviamo quale delle due chiavi è quella corretta nel grafo
+      actual_key <- NULL
+      if (edge_key %in% all_edge_names) {
+        actual_key <- edge_key
+      } else if (rev_edge_key %in% all_edge_names) {
+        actual_key <- rev_edge_key
+      }
+      
+      if (!is.null(actual_key)) {
+        p_val_raw <- P[node_i, node_j]
+        p_norm <- (p_val_raw - 0.85) / (1 - 0.85)
+        edge_cols[actual_key] <- gray(1 - p_norm)
       }
     }
   }
   
   edgeAttrs <- list(color = edge_cols)
+  
+  
+  # Prepariamo gli attributi
+  attrs <- list(
+    graph = list(
+      layout = "dot",
+      rankdir = "BT",       # Alto -> Basso
+      nodesep = "0.5",      # Spazio tra nodi dello stesso livello
+      ranksep = "1"         # Spazio tra i livelli (altezza del grafo)
+    ),
+    edge = list(lwd = 3),
+    node = list(fontsize = "10", fillcolor = "white", style = "filled")
+  )
+  
+  # Per far risaltare il Riboflavin in basso, coloriamolo diversamente
+  node_colors <- rep("white", length(nodes(g_sub_nel)))
+  names(node_colors) <- nodes(g_sub_nel)
+  node_colors["logRiboflavin"] <- "#E3F2FD" # Così lo vedi subito in fondo
+  
+  nAttrs$fillcolor <- node_colors
+  
+  plot(g_sub_nel, 
+       nodeAttrs = nAttrs, 
+       edgeAttrs = edgeAttrs, 
+       attrs = attrs)
  
-  # # # ---- Plot finale "graphNEL style" ---- 
-  plot(g_sub_nel, nodeAttrs = nAttrs, edgeAttrs = edgeAttrs, attrs = list(edge = list(lwd = 2)))
-  #plot(g_sub_nel, nodeAttrs = nAttrs)
 }
+  
 
