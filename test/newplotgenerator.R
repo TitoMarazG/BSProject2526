@@ -5,6 +5,21 @@ library(tidygraph)
 library(tidyverse)
 library(scales) 
 
+
+res_bayes <- readRDS("C:/Users/Ascolani/Documents/bayesian Proj/BSProject2526/test/RDS/Riboflavin_Bayes_q1000.rds")
+
+skltn.bayes <- res_bayes@graph
+adj <- as(skltn.bayes, "matrix")
+
+BF_max = res_bayes@pMax
+all_node_names <- nodes(res_bayes@graph)
+rownames(BF_max) <- all_node_names
+colnames(BF_max) <- all_node_names
+
+target_node <- "logRiboflavin"
+
+
+
 # --- (ASSUMIAMO CHE I DATI 'P' E 'adj' SIANO GIA' CARICATI) ---
 # Se necessario, riesegui la parte iniziale di caricamento dati.
 
